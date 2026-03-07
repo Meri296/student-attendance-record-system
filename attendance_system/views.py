@@ -1,110 +1,106 @@
-from rest_framework import viewsets, generics
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
-from django.db.models import Count
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import authenticate, login
 
-from .models import Student, Course, Attendance
-from .serializers import (
-    RegisterSerializer,
-    StudentSerializer,
-    CourseSerializer,
-    AttendanceSerializer
-)
-from .permissions import IsAdminOrTeacher
+from .models import Course, Student, Attendance
+from .forms import StudentForm
+from django.contrib.auth.decorators import login_required
 
 
-# ========================
-# Register
-# ========================
-class RegisterView(generics.CreateAPIView):
-    serializer_class = RegisterSerializer
-    permission_classes = [AllowAny]
+# Take Attendance
+def take_attendance(request, course_id):
+
+    course = get_object_or_404(Course, id=course_id)
+    students = Student.objects.filter(course=course)
+
+    if request.method == "POST":
+        for student in students:
+            status = request.POST.get(str(student.id))
+
+            if status:
+                Attendance.objects.create(
+                    student=student,
+                    course=course,
+                    status=status
+                )
+
+        return redirect("attendance_success")
+
+    return render(request, "take_attendance.html", {
+        "course": course,
+        "students": students
+    })
 
 
-# ========================
-# Login
-# ========================
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def login_view(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
+@login_required
+def teacher_courses(request):
 
-    user = authenticate(username=username, password=password)
+    # Show only courses belonging to logged-in teacher
+    courses = Course.objects.filter(teacher=request.user)
 
-    if user:
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key})
-
-    return Response({'error': 'Invalid credentials'}, status=400)
+    return render(request, "teacher_courses.html", {
+        "courses": courses
+    })
 
 
-# ========================
-# Student CRUD
-# ========================
-class StudentViewSet(viewsets.ModelViewSet):
-    queryset = Student.objects.all()
-    serializer_class = StudentSerializer
-    permission_classes = [IsAuthenticated]
+# Delete Student
+def delete_student(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+    student.delete()
+    return redirect('student_list')
 
 
-# ========================
-# Course CRUD
-# ========================
-class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.all()
-    serializer_class = CourseSerializer
-    permission_classes = [IsAuthenticated]
+# Edit Student
+def edit_student(request, student_id):
+
+    student = get_object_or_404(Student, id=student_id)
+
+    if request.method == "POST":
+        form = StudentForm(request.POST, instance=student)
+
+        if form.is_valid():
+            form.save()
+            return redirect('student_list')
+
+    else:
+        form = StudentForm(instance=student)
+
+    return render(request, "edit_student.html", {"form": form})
 
 
-# ========================
-# Attendance CRUD
-# ========================
-class AttendanceViewSet(viewsets.ModelViewSet):
-    queryset = Attendance.objects.all()
-    serializer_class = AttendanceSerializer
-    permission_classes = [IsAdminOrTeacher]
+# Teacher Login
+def teacher_login(request):
 
-    def perform_create(self, serializer):
-        serializer.save(marked_by=self.request.user)
+    if request.method == "POST":
 
-    def get_queryset(self):
-        queryset = Attendance.objects.all()
+        username = request.POST["username"]
+        password = request.POST["password"]
 
-        student_id = self.request.query_params.get('student')
-        course_id = self.request.query_params.get('course')
-        date = self.request.query_params.get('date')
+        user = authenticate(request, username=username, password=password)
 
-        if student_id:
-            queryset = queryset.filter(student_id=student_id)
+        if user is not None and user.is_teacher:
+            login(request, user)
+            return redirect("teacher_dashboard")
 
-        if course_id:
-            queryset = queryset.filter(course_id=course_id)
-
-        if date:
-            queryset = queryset.filter(date=date)
-
-        return queryset
+    return render(request, "login.html")
 
 
-# ========================
-# Attendance Percentage
-# ========================
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def attendance_percentage(request, student_id):
-    total = Attendance.objects.filter(student_id=student_id).count()
+# Student Report
+def student_report(request, student_id):
+
+    student = get_object_or_404(Student, id=student_id)
+
+    total = Attendance.objects.filter(student=student).count()
+
     present = Attendance.objects.filter(
-        student_id=student_id,
-        status='PRESENT'
+        student=student,
+        status="present"
     ).count()
 
-    percentage = (present / total) * 100 if total > 0 else 0
+    percentage = (present / total * 100) if total > 0 else 0
 
-    return Response({
-        "student_id": student_id,
-        "attendance_percentage": round(percentage, 2)
+    return render(request, "student_report.html", {
+        "student": student,
+        "total": total,
+        "present": present,
+        "percentage": percentage
     })

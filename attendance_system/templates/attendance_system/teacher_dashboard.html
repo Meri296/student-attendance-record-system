@@ -1,0 +1,19 @@
+<h1>Your Courses</h1>
+
+<ul>
+
+{% for course in courses %}
+
+<li>
+
+{{course.name}}
+
+<a href="/attendance/{{course.id}}/">Take Attendance</a>
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+<a href="/logout/">Logout</a>

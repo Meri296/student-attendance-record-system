@@ -2,82 +2,57 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 
-# ==========================
 # Custom User Model
-# ==========================
 class User(AbstractUser):
-    ROLE_CHOICES = (
-        ('ADMIN', 'Admin'),
-        ('TEACHER', 'Teacher'),
-    )
-
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.username
+    is_teacher = models.BooleanField(default=False)
 
 
-# ==========================
 # Course Model
-# ==========================
 class Course(models.Model):
-    course_name = models.CharField(max_length=255)
-    course_code = models.CharField(max_length=50, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    name = models.CharField(max_length=200)
+    teacher = models.ForeignKey(
+    User,
+    on_delete=models.CASCADE,
+    limit_choices_to={'is_teacher': True}
+)
     def __str__(self):
-        return self.course_name
+        return self.name
 
 
-# ==========================
 # Student Model
-# ==========================
 class Student(models.Model):
-    full_name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
-    enrollment_number = models.CharField(max_length=100, unique=True)
-    course = models.ForeignKey(
-        Course,
-        on_delete=models.CASCADE,
-        related_name='students'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(max_length=200)
+    student_id = models.CharField(max_length=20, unique=True)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.full_name
+        return self.name
 
 
-# ==========================
 # Attendance Model
-# ==========================
 class Attendance(models.Model):
+
     STATUS_CHOICES = (
-        ('PRESENT', 'Present'),
-        ('ABSENT', 'Absent'),
+        ('present', 'Present'),
+        ('absent', 'Absent'),
     )
 
-    student = models.ForeignKey(
-        Student,
-        on_delete=models.CASCADE,
-        related_name='attendance_records'
-    )
-    course = models.ForeignKey(
-        Course,
-        on_delete=models.CASCADE,
-        related_name='attendance_records'
-    )
-    date = models.DateField()
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-    marked_by = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='marked_attendance'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = ('student', 'course', 'date')
+    def total_present(self):
+        return Attendance.objects.filter(
+            student=self.student,
+            status='present'
+        ).count()
+
+    def total_absent(self):
+        return Attendance.objects.filter(
+            student=self.student,
+            status='absent'
+        ).count()
 
     def __str__(self):
-        return f"{self.student.full_name} - {self.date} - {self.status}"
+        return f"{self.student.name} - {self.status}"
