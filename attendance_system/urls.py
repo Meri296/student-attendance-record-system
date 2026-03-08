@@ -3,18 +3,20 @@ from . import views
 
 urlpatterns = [
 
-    path("courses/", views.teacher_courses, name="teacher_courses"),
+    # Browser pages
+    path('login/', views.login_view),
+    path('courses/', views.teacher_courses),
+    path('attendance/<int:course_id>/', views.take_attendance),
+    path('report/<int:course_id>/', views.attendance_report),
 
-    path('student/delete/<int:student_id>/',
-         views.delete_student,
-         name='delete_student'),
+    # API endpoints
+    path('api/students/', views.student_list),
+    path('api/students/<int:id>/', views.student_detail),
 
-    path('student/edit/<int:student_id>/',
-         views.edit_student,
-         name='edit_student'),
+    path('api/courses/', views.course_list),
+    path('api/courses/<int:id>/', views.course_detail),
 
-    path("attendance/<int:course_id>/",
-         views.take_attendance,
-         name="take_attendance"),
-
+    path('api/attendance/', views.attendance_list),
+    path('api/attendance/<int:id>/', views.attendance_detail),
+    path('attendance/', views.attendance_page),
 ]

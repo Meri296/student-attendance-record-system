@@ -1,8 +1,0 @@
-<h2>My Courses</h2>
-
-{% for course in courses %}
-    <p>
-        {{ course.name }}
-        <a href="/attendance/{{ course.id }}/">Take Attendance</a>
-    </p>
-{% endfor %}

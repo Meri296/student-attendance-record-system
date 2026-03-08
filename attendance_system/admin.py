@@ -15,7 +15,6 @@ class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'is_teacher', 'is_staff')
 
 
-admin.site.register(User, CustomUserAdmin)
 admin.site.register(Course)
 admin.site.register(Student)
 admin.site.register(Attendance)

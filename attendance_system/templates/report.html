@@ -1,0 +1,23 @@
+<h2>Attendance Report - {{course.course_name}}</h2>
+
+<table border="1">
+
+<tr>
+<th>Student</th>
+<th>Status</th>
+<th>Date</th>
+</tr>
+
+{% for r in records %}
+
+<tr>
+
+<td>{{r.student.name}}</td>
+<td>{{r.status}}</td>
+<td>{{r.date}}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>

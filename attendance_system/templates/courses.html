@@ -1,4 +1,4 @@
-<h1>Your Courses</h1>
+<h2>Your Courses</h2>
 
 <ul>
 
@@ -6,14 +6,14 @@
 
 <li>
 
-{{course.name}}
+{{course.course_name}}
 
 <a href="/attendance/{{course.id}}/">Take Attendance</a>
+
+<a href="/report/{{course.id}}/">View Report</a>
 
 </li>
 
 {% endfor %}
 
 </ul>
-
-<a href="/logout/">Logout</a>
