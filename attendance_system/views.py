@@ -4,6 +4,97 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 
 from .models import Course, Student, Attendance
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from .forms import TeacherRegisterForm
+
+from django.contrib.auth import authenticate, login
+
+
+def teacher_login(request):
+
+    if request.method == "POST":
+
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+
+            login(request, user)
+
+            return redirect("dashboard")
+
+    return render(request, "login.html")
+from django.contrib.auth import logout
+
+
+def teacher_logout(request):
+
+    logout(request)
+
+    return redirect("login")
+
+
+
+def register_teacher(request):
+
+    if request.method == "POST":
+
+        form = TeacherRegisterForm(request.POST)
+
+        if form.is_valid():
+
+            user = form.save(commit=False)
+            user.is_teacher = True
+            user.save()
+
+            login(request, user)
+
+            return redirect("dashboard")
+
+    else:
+        form = TeacherRegisterForm()
+
+    return render(request, "register.html", {"form": form})
+
+
+# Login View
+def login_view(request):
+
+    if request.method == "POST":
+
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+
+            if user.is_staff:
+                return redirect('/admin/')
+            else:
+                return redirect('/dashboard/')
+
+        else:
+            return render(request, "login.html", {"error": "Invalid credentials"})
+
+    return render(request, "login.html")
+
+
+# Logout View
+def logout_view(request):
+    logout(request)
+    return redirect('/login/')
+
+
+# Dashboard
+@login_required
+def dashboard(request):
+    return render(request, "dashboard.html")
 
 
 # ----------------

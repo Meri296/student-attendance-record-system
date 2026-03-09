@@ -1,8 +1,10 @@
 from django import forms
-from .models import Student
+from django.contrib.auth.forms import UserCreationForm
+from .models import User
 
-class StudentForm(forms.ModelForm):
+
+class TeacherRegisterForm(UserCreationForm):
 
     class Meta:
-        model = Student
-        fields = ['name', 'student_id', 'course']
+        model = User
+        fields = ['username', 'email', 'password1', 'password2']
